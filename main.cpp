@@ -55,6 +55,7 @@ void run_loop()
 	//			exit(true)
 	//		}
 	//
+	delete cluster;
 	log("Win32 Cluster Service shutting down.");
 }
 

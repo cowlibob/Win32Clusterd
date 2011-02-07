@@ -7,7 +7,7 @@ A Windows service responsible for launching and maintaining multiple instances o
 `Win32Clusterd install`
 `Win32Clusterd start`
 
-Run a production rails app with `c:\\ruby\\bin\\ruby` with three instances on ports 300, 3001, 3002
+Run a production rails app with `c:\\ruby\\bin\\ruby` with three instances on ports 3000, 3001, 3002
 
 ## Usage
 `Win32Clusterd.exe [command [options]]`
