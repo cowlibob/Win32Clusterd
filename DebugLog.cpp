@@ -60,7 +60,7 @@ const TCHAR * DebugLog::format_log(const TCHAR *format, va_list arglist)
 		LocalFree(lpMsgBuf);
 
 		const TCHAR *ret = format_log(temp, arglist);
-		delete temp;									// Delete our customised format buffer
+		delete[] temp;									// Delete our customised format buffer
 		return ret;
 	}
 
@@ -69,9 +69,9 @@ const TCHAR * DebugLog::format_log(const TCHAR *format, va_list arglist)
 	{
 		time_t t;
 		time(&t);
-		tm *today = NULL; // = localtime(&t);
-		localtime_s(today, &t);
-		len = _tcsftime(m_log, MAX_LOG_LEN, TEXT("[%d-%b-%Y %H:%M:%S] "), today);
+		tm today; // = localtime(&t);
+		localtime_s(&today, &t);
+		len = _tcsftime(m_log, MAX_LOG_LEN, TEXT("[%d-%b-%Y %H:%M:%S] "), &today);
 		_vsntprintf_s(m_log + len, MAX_LOG_LEN - len, _TRUNCATE, format, arglist);
 	}
 	return m_log;
