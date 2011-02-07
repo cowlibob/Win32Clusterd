@@ -15,6 +15,7 @@ Win32Clusterd::Win32Clusterd()
 {
 	m_average_instance_life = 0;
 	m_discard_count = 0;
+	m_live_count = 0;
 	m_mongrel_command = NULL;
 	m_mongrel_command_template = NULL;
 	m_mongrel_working_dir = NULL;
@@ -45,6 +46,7 @@ Win32Clusterd::~Win32Clusterd(void)
 	delete[] m_mongrel_command;
 	delete[] m_mongrel_command_template;
 	delete[] m_mongrel_working_dir;
+	delete m_config;
 }
 
 bool Win32Clusterd::is_initialized()
@@ -102,7 +104,6 @@ void Win32Clusterd::monitor()
 	if(dwEvent == WAIT_TIMEOUT)
 	{
 		// No processes died, continue
-		m_log.log(TEXT("Processes Okay."));
 	}
 	else if(wait_index < instance_count && wait_index >= 0)
 	{
@@ -128,7 +129,9 @@ void Win32Clusterd::monitor()
 unsigned int Win32Clusterd::count()
 {
 	unsigned int count = m_list.size();
-	m_log.log(TEXT("Counted %d mongrels"), count);
+	if(m_live_count != count)
+		m_log.log(TEXT("Counted %d mongrels"), count);
+	m_live_count = count;
 	return count;
 }
 
@@ -159,6 +162,8 @@ bool Win32Clusterd::build_process_params(ProcessDetail* pd)
 	size_t len3 = _tcslen(m_mongrel_command);
 	_tcscat_s(m_mongrel_command, len, m_mongrel_command_template + (substart - m_mongrel_command_template) + PORT_PLACEHOLDER_LEN);
 	size_t len4 = _tcslen(m_mongrel_command);
+
+	delete[] port;
 
 	return true;
 }

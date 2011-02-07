@@ -38,6 +38,7 @@ private:
 	unsigned int				m_base_port;
 	vector<unsigned int>		m_unused_ports;
 	unsigned int				m_discard_count;
+	unsigned int				m_live_count;
 	__time64_t					m_average_instance_life;
 	TCHAR						*m_mongrel_command;
 	TCHAR						*m_mongrel_command_template;
