@@ -34,4 +34,4 @@ Type Win32Clusterd help [command] for more information.\
 #define HELP_RUN TEXT("Win32Clusterd.exe run\n\t- runs win32_clusterd as a normal process.\n")
 #define HELP_EXAMPLES TEXT("Examples:\n\
 \tRun a rails app with c:\\ruby\\bin\\ruby with three instances on ports 300, 3001, 3002:\n\
-\t\tWin32Clusterd instances=3 baseport=3000 workingdir=c:\\rails_app command=\"c:\\ruby192\\bin\\ruby.exe c:\\rails_app\\script\\server -p %%PORT%% -e production\n")
+\t\tWin32Clusterd configure instances=3 baseport=3000 workingdir=c:\\rails_app command=\"c:\\ruby192\\bin\\ruby.exe c:\\rails_app\\script\\server -p %%PORT%% -e production\n")

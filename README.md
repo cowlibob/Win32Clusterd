@@ -69,6 +69,6 @@ runs win32_clusterd as a normal process.
 
 ### Eamples
 
-`Win32Clusterd instances=3 baseport=3000 workingdir=c:\\rails_app command="c:\\ruby192\\bin\\ruby.exe c:\\rails_app\\script\\server -p %PORT% -e production`
+`Win32Clusterd configure instances=3 baseport=3000 workingdir=c:\\rails_app command="c:\\ruby192\\bin\\ruby.exe c:\\rails_app\\script\\server -p %PORT% -e production`
 
 Run a rails app with `c:\\ruby\\bin\\ruby` with three instances on ports 300, 3001, 3002
