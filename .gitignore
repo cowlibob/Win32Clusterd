@@ -1,0 +1,10 @@
+Debug/
+Release/
+Win32Clusterd.opensdf
+Win32Clusterd.reg
+Win32Clusterd.sdf
+Win32Clusterd.suo
+Win32Clusterd.vcxproj.filters
+Win32Clusterd.vcxproj.user
+ipch/
+mongrel_cluster.sdf
