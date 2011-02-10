@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 #include "Win32Clusterd.h"
 #include "ProcessDetail.h"
 #include <time.h>
@@ -157,14 +159,13 @@ bool Win32Clusterd::build_process_params(ProcessDetail* pd)
 	m_mongrel_command = new TCHAR[len];
 
 	_tcsncpy_s(m_mongrel_command, len, m_mongrel_command_template, substart - m_mongrel_command_template);
-	size_t len2 = _tcslen(m_mongrel_command);
+	//size_t len2 = _tcslen(m_mongrel_command);
 	_tcscat_s(m_mongrel_command, len, port);
-	size_t len3 = _tcslen(m_mongrel_command);
+	//size_t len3 = _tcslen(m_mongrel_command);
 	_tcscat_s(m_mongrel_command, len, m_mongrel_command_template + (substart - m_mongrel_command_template) + PORT_PLACEHOLDER_LEN);
-	size_t len4 = _tcslen(m_mongrel_command);
+	//size_t len4 = _tcslen(m_mongrel_command);
 
 	delete[] port;
-
 	return true;
 }
 

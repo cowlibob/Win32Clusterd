@@ -63,7 +63,7 @@ int run_as_service()
 {
 	log("Win32 Cluster - Starting as Service");
 	SERVICE_TABLE_ENTRY ServiceTable[2];
-	ServiceTable[0].lpServiceName = SERVICE_NAME_W;
+	ServiceTable[0].lpServiceName = (TCHAR*)SERVICE_NAME_W;
 	ServiceTable[0].lpServiceProc = (LPSERVICE_MAIN_FUNCTION)ServiceMain;
 
 	ServiceTable[1].lpServiceName = NULL;
@@ -173,7 +173,7 @@ int install_service()
 
 	// Set the description that is visible in the administration tools server list
 	SERVICE_DESCRIPTION sd;
-	sd.lpDescription = TEXT("Manages multiple ruby processes.");
+	sd.lpDescription = (TCHAR*)TEXT("Manages multiple ruby processes.");
 	BOOL status = ChangeServiceConfig2(schService, SERVICE_CONFIG_DESCRIPTION, &sd);
 	_ASSERT(status != 0);
 

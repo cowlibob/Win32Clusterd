@@ -9,11 +9,16 @@
 
 #include <Windows.h>
 #include <stdarg.h>
-#include <string.h>
-#include <crtdbg.h>
 #include <stdio.h>
+#include <string.h>
+#ifndef GCC
+#	include <crtdbg.h>
+#endif
 #include <tchar.h>
 #include <time.h>
+#include <assert.h>
+
+#include "msys.h"
 
 
 // TODO: reference additional headers your program requires here
