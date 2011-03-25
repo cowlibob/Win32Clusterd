@@ -26,6 +26,8 @@ SERVICE_STATUS			ServiceStatus;
 SERVICE_STATUS_HANDLE	hStatus;
 SC_HANDLE				g_schSCManager;
 Win32Clusterd			*cluster = NULL;
+TCHAR					*g_serviceName = NULL;
+Win32ClusterdConfig		*g_config = NULL;
 
 void ServiceMain(int argc, char** argv);
 void ControlHandler(DWORD request);
@@ -33,7 +35,7 @@ int InitService();
 
 void run_loop()
 {
-	cluster = new Win32Clusterd();
+	cluster = new Win32Clusterd(g_config);
 	if(!cluster->is_initialized())
 	{
 		log("Failed to execute because some configuration data is missing.");
@@ -63,7 +65,7 @@ int run_as_service()
 {
 	log("Win32 Cluster - Starting as Service");
 	SERVICE_TABLE_ENTRY ServiceTable[2];
-	ServiceTable[0].lpServiceName = (TCHAR*)SERVICE_NAME_W;
+	ServiceTable[0].lpServiceName = g_serviceName;
 	ServiceTable[0].lpServiceProc = (LPSERVICE_MAIN_FUNCTION)ServiceMain;
 
 	ServiceTable[1].lpServiceName = NULL;
@@ -100,8 +102,8 @@ SC_HANDLE open_service(DWORD desired_access)
     // Get a handle to the service.
 
     schService = OpenService( 
-        g_schSCManager,       // SCM database 
-        SERVICE_NAME_W,       // name of service 
+        g_schSCManager,			// SCM database 
+        g_serviceName,			// name of service 
         desired_access);
 
     if (schService == NULL)
@@ -148,19 +150,19 @@ int install_service()
 
 	// Create the service
 	schService = CreateService( 
-		schSCManager,              // SCM database 
-		SERVICE_NAME_W,            // name of service 
-		SERVICE_NAME_W,            // service name to display 
-		SERVICE_ALL_ACCESS,        // desired access 
-		SERVICE_WIN32_OWN_PROCESS, // service type 
-		SERVICE_AUTO_START,        // start type 
-		SERVICE_ERROR_NORMAL,      // error control type 
-		szPath,                    // path to service's binary 
-		NULL,                      // no load ordering group 
-		NULL,                      // no tag identifier 
-		NULL,                      // no dependencies 
-		NULL,                      // LocalSystem account 
-		NULL);                     // no password 
+		schSCManager,				// SCM database 
+		g_serviceName,				// name of service 
+		g_serviceName,				// service name to display 
+		SERVICE_ALL_ACCESS,			// desired access 
+		SERVICE_WIN32_OWN_PROCESS,	// service type 
+		SERVICE_AUTO_START,			// start type 
+		SERVICE_ERROR_NORMAL,		// error control type 
+		szPath,						// path to service's binary 
+		NULL,						// no load ordering group 
+		NULL,						// no tag identifier 
+		NULL,						// no dependencies 
+		NULL,						// LocalSystem account 
+		NULL);						// no password 
  
 	if (schService == NULL)
 	{
@@ -292,6 +294,7 @@ int help(int argc, _TCHAR* argv[])
 	
 	switch(argc)
 	{
+	case 1:
 	case 2:
 		_tprintf(HELP_GENERAL);
 		break;
@@ -321,8 +324,7 @@ int help(int argc, _TCHAR* argv[])
 		
 int configure(int argc, _TCHAR* argv[])
 {
-	Win32ClusterdConfig config;
-	if(config.configure(argc, argv))
+	if(g_config->configure(argc, argv))
 		return 0;
 	else
 		return 1;
@@ -330,8 +332,7 @@ int configure(int argc, _TCHAR* argv[])
 
 int clean()
 {
-	Win32ClusterdConfig config;
-	if(config.clean())
+	if(g_config->clean())
 		return 0;
 	else
 		return 1;
@@ -340,8 +341,15 @@ int clean()
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	if(argc >= 2)
+	if(argc < 2 || (argc >=2 && _tcsicmp(argv[1], TEXT("help")) == 0))
 	{
+		return help(argc, argv);
+	}
+	else if(argc >= 2)
+	{
+		g_config = new Win32ClusterdConfig;
+		g_config->get(SERVICENAME, &g_serviceName);
+
 		if(_tcsicmp(argv[1], TEXT("run")) == 0)
 			return run_as_app();
 		else if(_tcsicmp(argv[1], TEXT("install")) == 0)
@@ -358,10 +366,8 @@ int _tmain(int argc, _TCHAR* argv[])
 			return configure(argc, argv);
 		else if(_tcsicmp(argv[1], TEXT("clean")) == 0)
 			return clean();
-		else if(_tcsicmp(argv[1], TEXT("help")) == 0)
-			return help(argc, argv);
 	}
-	return help(argc, argv);
+	return 0;
 }
 
 void report_service_status(DWORD status, int return_value = 0)
@@ -389,7 +395,7 @@ void ServiceMain(int argc, char** argv)
 	ServiceStatus.dwCheckPoint = 0;
 	ServiceStatus.dwWaitHint = 0;
 
-	hStatus = RegisterServiceCtrlHandler(SERVICE_NAME_W, (LPHANDLER_FUNCTION)ControlHandler);
+	hStatus = RegisterServiceCtrlHandler(g_serviceName, (LPHANDLER_FUNCTION)ControlHandler);
 	if(hStatus == (SERVICE_STATUS_HANDLE)0)
 	{
 		// Registering control handler failed

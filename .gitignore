@@ -8,3 +8,5 @@ Win32Clusterd.vcxproj.filters
 Win32Clusterd.vcxproj.user
 ipch/
 mongrel_cluster.sdf
+*.o
+

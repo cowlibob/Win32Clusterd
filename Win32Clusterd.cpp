@@ -13,7 +13,7 @@
 #define PORT_PLACEHOLDER TEXT("%PORT%")
 #define PORT_PLACEHOLDER_LEN 6
 
-Win32Clusterd::Win32Clusterd()
+Win32Clusterd::Win32Clusterd(Win32ClusterdConfig* config)
 {
 	m_average_instance_life = 0;
 	m_discard_count = 0;
@@ -23,11 +23,15 @@ Win32Clusterd::Win32Clusterd()
 	m_mongrel_working_dir = NULL;
 	m_base_port = 0;
 	m_desired_instances = 0;
-	m_config = new Win32ClusterdConfig;
+	m_config = config;
+	if(!m_config)
+		m_config = new Win32ClusterdConfig;
+
 	m_config->get(COMMAND, &m_mongrel_command_template);
 	m_config->get(WORKINGDIR, &m_mongrel_working_dir);
 	m_config->get(BASEPORT, &m_base_port);
 	m_config->get(INSTANCES, &m_desired_instances);
+	m_config->get(SERVICENAME, &m_service_name);
 
 	// Populate unused ports list
 	m_unused_ports.resize(m_desired_instances, m_base_port);
@@ -154,16 +158,11 @@ bool Win32Clusterd::build_process_params(ProcessDetail* pd)
 	delete[] m_mongrel_command;
 	size_t len = _tcslen(m_mongrel_command_template);
 	len *= 2;
-	//len += _tcslen(port);
-	//len -= PORT_PLACEHOLDER_LEN;
 	m_mongrel_command = new TCHAR[len];
 
 	_tcsncpy_s(m_mongrel_command, len, m_mongrel_command_template, substart - m_mongrel_command_template);
-	//size_t len2 = _tcslen(m_mongrel_command);
 	_tcscat_s(m_mongrel_command, len, port);
-	//size_t len3 = _tcslen(m_mongrel_command);
 	_tcscat_s(m_mongrel_command, len, m_mongrel_command_template + (substart - m_mongrel_command_template) + PORT_PLACEHOLDER_LEN);
-	//size_t len4 = _tcslen(m_mongrel_command);
 
 	delete[] port;
 	return true;

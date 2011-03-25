@@ -19,7 +19,18 @@ void DebugLog::log(const TCHAR* msg, ...)
 	memset(m_log, 0, MAX_LOG_LEN * sizeof(TCHAR));
 	va_list argptr;
 	va_start(argptr, msg);
-	format_log(msg, argptr);
+	format_log(msg, ~0, argptr);
+	va_end(argptr);
+	OutputDebugString(m_log);
+	OutputDebugString(TEXT("\n"));
+}
+
+void DebugLog::log_error(const TCHAR* msg, const LONG error_code, ...)
+{
+	memset(m_log, 0, MAX_LOG_LEN * sizeof(TCHAR));
+	va_list argptr;
+	va_start(argptr, error_code);
+	format_log(msg, error_code, argptr);
 	va_end(argptr);
 	OutputDebugString(m_log);
 	OutputDebugString(TEXT("\n"));
@@ -28,7 +39,7 @@ void DebugLog::log(const TCHAR* msg, ...)
 /*
  * Message formatting for errors and variable arguments.
  */
-const TCHAR * DebugLog::format_log(const TCHAR *format, va_list arglist)
+const TCHAR * DebugLog::format_log(const TCHAR *format, const LONG error_code, va_list arglist)
 {
 	size_t len = 0;
 
@@ -37,7 +48,12 @@ const TCHAR * DebugLog::format_log(const TCHAR *format, va_list arglist)
 	if (substart != NULL)
 	{
 		LPVOID lpMsgBuf;
-		DWORD dw = GetLastError(); 
+		DWORD dw;
+		if(error_code == ~0)
+			dw = GetLastError();
+		else
+			dw = (DWORD) error_code;
+
 		FormatMessage(
 			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
 			NULL,
@@ -52,14 +68,14 @@ const TCHAR * DebugLog::format_log(const TCHAR *format, va_list arglist)
 		TCHAR *temp = new TCHAR[fl];
 		_ASSERT(temp != NULL);
 		_tcsncpy_s(temp, fl, format, substart - format);		// Copy the part of the formatting string before the '%winerror%'
-		temp[temp - format] = 0;
+		//temp[_tcslen(format) - _tcslen(temp)] = 0;
 		_tcscat_s(temp, fl, (const TCHAR *)lpMsgBuf);			// Add the windows error message
-		_tcscat_s(temp, fl, substart + 4);					// And the remainder of the original format string
+		_tcscat_s(temp, fl, substart + _tcslen(TEXT("<LAST_ERROR>")));					// And the remainder of the original format string
 
 		// Free up the window message
 		LocalFree(lpMsgBuf);
 
-		const TCHAR *ret = format_log(temp, arglist);
+		const TCHAR *ret = format_log(temp, ~0, arglist);
 		delete[] temp;									// Delete our customised format buffer
 		return ret;
 	}

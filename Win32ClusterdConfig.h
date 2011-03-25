@@ -13,6 +13,9 @@
 #ifndef INSTANCES
 #	define INSTANCES TEXT("Instances")
 #endif
+#ifndef SERVICENAME
+#	define SERVICENAME TEXT("ServiceName")
+#endif
 
 class Win32ClusterdConfig
 {

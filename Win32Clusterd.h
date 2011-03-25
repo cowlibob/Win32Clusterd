@@ -3,7 +3,7 @@
 #include <vector>
 #include <time.h>
 #include <Windows.h>
-
+#include "Win32ClusterdConfig.h"
 #include "DebugLog.h"
 using namespace std;
 
@@ -15,7 +15,7 @@ class Win32ClusterdConfig;
 class Win32Clusterd
 {
 public:
-	Win32Clusterd();
+	Win32Clusterd(Win32ClusterdConfig* config);
 	~Win32Clusterd(void);
 	bool				is_initialized();
 	void				update();
@@ -43,6 +43,7 @@ private:
 	TCHAR						*m_mongrel_command;
 	TCHAR						*m_mongrel_command_template;
 	TCHAR						*m_mongrel_working_dir;
+	TCHAR						*m_service_name;
 	Win32ClusterdConfig			*m_config;
 	DebugLog					m_log;
 };

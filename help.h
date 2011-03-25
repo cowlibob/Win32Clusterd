@@ -24,7 +24,8 @@ Type Win32Clusterd help [command] for more information.\
 \t\tbaseport=n\t\t\t- Configures Win32Clusterd to assign (and resuse) consecutive port numbers starting at n\n\
 \t\tworkingdir=path\t\t\t- Configures Win32Clusterd child processes to use path as working directory\n\
 \t\tcommand=command_line\t\t- Specifies command line for processes to run, eg a path to ruby followed by a script and script options.\n\
-\t\t\t\t\t\t  Note that %%PORT%% will be replaced at runtime with the assigned port number.\n")
+\t\tservicename=service_name\t- Sets the name the service will be installed as e.g. rails_app, sinatra_cluster etc.\n\
+Note that %%PORT%% will be replaced at runtime with the assigned port number.\n")
 
 #define HELP_CLEAN TEXT("Win32Clusterd.exe clean\n\t- removes cluster settings from registry.\n")
 #define HELP_INSTALL TEXT("Win32Clusterd.exe install\n\t- installs Win32Clusterd as a windows service.\n")

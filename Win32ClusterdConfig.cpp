@@ -4,21 +4,31 @@
 #include <tchar.h>
 
 #ifndef MONGREL_CLUSTER_REG_KEY
-#	define MONGREL_CLUSTER_REG_KEY TEXT("SOFTWARE\\SecurStar\\DCE_Server\\Win32Clusterd")
+#	define MONGREL_CLUSTER_REG_KEY "SOFTWARE\\SecurStar\\DCE_Server\\Win32Clusterd"
+#	define MONGREL_CLUSTER_REG_KEY_W TEXT(MONGREL_CLUSTER_REG_KEY)
 #endif
 
 
 #define KEY_AND_STRING_FMT TEXT("%[^=]=%s")
 #define KEY_AND_NUM_FMT TEXT("%[^=]=%d")
+#define MATCH(_x, _y) (_tcsncicmp(_x, _y, _tcslen(_y)) == 0)
 
 Win32ClusterdConfig::Win32ClusterdConfig(void)
 :m_reg_key(NULL)
 {
-	if(ERROR_SUCCESS != RegCreateKeyEx(HKEY_LOCAL_MACHINE, MONGREL_CLUSTER_REG_KEY, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_SET_VALUE | KEY_QUERY_VALUE, NULL, &m_reg_key, NULL))
+	LONG error = RegCreateKeyEx(HKEY_LOCAL_MACHINE, MONGREL_CLUSTER_REG_KEY_W, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_SET_VALUE | KEY_QUERY_VALUE, NULL, &m_reg_key, NULL);
+	if( ERROR_SUCCESS != error)
 	{
-		_tprintf(TEXT("Failed to open or create Registry key %s: <LAST_ERROR>\n"), MONGREL_CLUSTER_REG_KEY);
+		m_log.log_error(TEXT("Failed to open or create Registry key %s: <LAST_ERROR>\n"), error, MONGREL_CLUSTER_REG_KEY_W);
 		m_reg_key = NULL;
 	}
+
+	if(m_reg_key == NULL)
+	{
+		_tprintf(TEXT("Please check read/write permissions for the following registry key:\n\tHKLM\\%s\n"), MONGREL_CLUSTER_REG_KEY_W);
+		_exit(error);
+	}
+
 }
 
 
@@ -31,9 +41,10 @@ Win32ClusterdConfig::~Win32ClusterdConfig(void)
 
 bool Win32ClusterdConfig::write_key(HKEY hKey, const TCHAR *input, const TCHAR *key)
 {
-	if(ERROR_SUCCESS != RegSetValueEx(hKey, key, NULL, REG_SZ, (BYTE*)input, _tcslen(input) * sizeof(TCHAR)))
+	LONG error = RegSetValueEx(hKey, key, NULL, REG_SZ, (BYTE*)input, _tcslen(input) * sizeof(TCHAR));
+	if(ERROR_SUCCESS != error)
 	{
-		m_log.log(TEXT("Failed to write registry value: <LAST_ERROR>"));
+		m_log.log_error(TEXT("Failed to write registry value: <LAST_ERROR>"), error);
 		return false;
 	}
 	return true;
@@ -41,9 +52,10 @@ bool Win32ClusterdConfig::write_key(HKEY hKey, const TCHAR *input, const TCHAR *
 
 bool Win32ClusterdConfig::write_key(HKEY hKey, const int input, const TCHAR *key)
 {
-	if(ERROR_SUCCESS != RegSetValueEx(hKey, key, NULL, REG_DWORD, (BYTE*)&input, sizeof(input)))
+	LONG error = RegSetValueEx(hKey, key, NULL, REG_DWORD, (BYTE*)&input, sizeof(input));
+	if(ERROR_SUCCESS !=  error)
 	{
-		m_log.log(TEXT("Failed to write registry value: <LAST_ERROR>"));
+		m_log.log_error(TEXT("Failed to write registry value: <LAST_ERROR>"), error);
 		return false;
 	}
 	return true;
@@ -53,9 +65,10 @@ bool Win32ClusterdConfig::read_key(HKEY hKey, TCHAR** output, const TCHAR* key )
 {
 	DWORD output_len = 0;
 	DWORD type;
-	if(ERROR_SUCCESS != RegQueryValueEx(hKey, key, NULL, &type, NULL, &output_len))
+	LONG error = RegQueryValueEx(hKey, key, NULL, &type, NULL, &output_len);
+	if(ERROR_SUCCESS != error)
 	{
-		m_log.log(TEXT("Failed to read registry key: <LAST_ERROR>"));
+		m_log.log_error(TEXT("Failed to read registry key: <LAST_ERROR>"), error);
 		return false;
 	}
 
@@ -68,9 +81,10 @@ bool Win32ClusterdConfig::read_key(HKEY hKey, TCHAR** output, const TCHAR* key )
 	*output = new TCHAR[output_len + 1];	// extra for a null-terminator safety-net.
 	memset(*output, 0, (output_len + 1) * sizeof(TCHAR));
 	//delete[] dst;
-	if(ERROR_SUCCESS != RegQueryValueEx(hKey, key, NULL, NULL, (LPBYTE) *output, &output_len))
+	error = RegQueryValueEx(hKey, key, NULL, NULL, (LPBYTE) *output, &output_len);
+	if(ERROR_SUCCESS != error)
 	{
-		m_log.log(TEXT("Failed to read registry key: <LAST_ERROR>"));
+		m_log.log_error(TEXT("Failed to read registry key: <LAST_ERROR>"), error);
 		delete[] *output;
 		return false;
 	}
@@ -83,9 +97,10 @@ bool Win32ClusterdConfig::read_key(HKEY hKey, unsigned int* output, const TCHAR*
 	DWORD output_len = 0;
 	DWORD type;
 	LONG result;
-	if(ERROR_SUCCESS != (result = RegQueryValueEx(hKey, key, NULL, &type, NULL, &output_len)))
+	result = RegQueryValueEx(hKey, key, NULL, &type, NULL, &output_len);
+	if(ERROR_SUCCESS != result)
 	{
-		m_log.log(TEXT("Failed to query path of ruby binary: <LAST_ERROR>"));
+		m_log.log_error(TEXT("Failed to query path of ruby binary: <LAST_ERROR>"), result);
 		return false;
 	}
 
@@ -95,9 +110,10 @@ bool Win32ClusterdConfig::read_key(HKEY hKey, unsigned int* output, const TCHAR*
 		return false;
 	}
 	
-	if(ERROR_SUCCESS != (result = RegQueryValueEx(hKey, key, NULL, NULL, (LPBYTE) output, &output_len)))
+	result = RegQueryValueEx(hKey, key, NULL, NULL, (LPBYTE) output, &output_len);
+	if(ERROR_SUCCESS != result)
 	{
-		m_log.log(TEXT("Failed to query path of ruby binary: <LAST_ERROR>"));
+		m_log.log_error(TEXT("Failed to query path of ruby binary: <LAST_ERROR>"), result);
 		return false;
 	}
 	
@@ -106,10 +122,11 @@ bool Win32ClusterdConfig::read_key(HKEY hKey, unsigned int* output, const TCHAR*
 
 bool Win32ClusterdConfig::is_key(const TCHAR* key)
 {
-	return _tcsicmp(key, MONGREL_CLUSTER_REG_KEY) == 0 ||
+	return _tcsicmp(key, MONGREL_CLUSTER_REG_KEY_W) == 0 ||
 		_tcsicmp(key, COMMAND) == 0 ||
 		_tcsicmp(key, WORKINGDIR) == 0 ||
 		_tcsicmp(key, BASEPORT) == 0 ||
+		_tcsicmp(key, SERVICENAME) == 0 ||
 		_tcsicmp(key, INSTANCES) == 0;
 }
 
@@ -119,12 +136,12 @@ bool Win32ClusterdConfig::is_key(const TCHAR* key)
 bool Win32ClusterdConfig::clean()
 {
 	bool success = true;
-	if(ERROR_SUCCESS != RegDeleteKey(HKEY_LOCAL_MACHINE, MONGREL_CLUSTER_REG_KEY))
+	if(ERROR_SUCCESS != RegDeleteKey(HKEY_LOCAL_MACHINE, MONGREL_CLUSTER_REG_KEY_W))
 	{
-		_tprintf(TEXT("Failed to delete registry key COMPUTER\\HKEY_LOCAL_MACHINE\\%s\n") , MONGREL_CLUSTER_REG_KEY);
+		_tprintf(TEXT("Failed to delete registry key COMPUTER\\HKEY_LOCAL_MACHINE\\%s\n") , MONGREL_CLUSTER_REG_KEY_W);
 		success = false;
 	}
-	_tprintf(TEXT("Settings successfully removed from COMPUTER\\HKEY_LOCAL_MACHINE\\%s\n"), MONGREL_CLUSTER_REG_KEY);
+	_tprintf(TEXT("Settings successfully removed from COMPUTER\\HKEY_LOCAL_MACHINE\\%s\n"), MONGREL_CLUSTER_REG_KEY_W);
 	return success;
 }
 
@@ -153,28 +170,29 @@ bool Win32ClusterdConfig::configure(int argc, TCHAR* argv[])
 	for(int arg_index = 2; arg_index < argc; arg_index++)
 	{
 		// get both string and numeric versions
-		if(_tcsncicmp(argv[arg_index], INSTANCES, _tcslen(INSTANCES)) == 0 || _tcsncicmp(argv[arg_index], BASEPORT, _tcslen(BASEPORT)) == 0)
+		TCHAR* arg = argv[arg_index];
+		if( MATCH(arg, INSTANCES) || MATCH(arg, BASEPORT) )
 		{
-			_stscanf_s(argv[arg_index], KEY_AND_NUM_FMT, key, 40, &num_value);
-			set(key, num_value);
+			_stscanf_s(arg, KEY_AND_NUM_FMT, key, 40, &num_value);
+			success = success && set(key, num_value);
 		}
-		else if(_tcsncicmp(argv[arg_index], WORKINGDIR, _tcslen(WORKINGDIR)) == 0 || _tcsncicmp(argv[arg_index], COMMAND, _tcslen(COMMAND)) == 0)
+		else if( MATCH(arg, WORKINGDIR) || MATCH(arg, COMMAND) || MATCH(arg, SERVICENAME) )
 		{
-			_tcscpy_s(key, key_length, _tcstok_s(argv[arg_index], TEXT("="), &next_token));
+			_tcscpy_s(key, key_length, _tcstok_s(arg, TEXT("="), &next_token));
 			_tcscpy_s(str_value, value_length, _tcstok_s(NULL, TEXT("="), &next_token));
 			
 			//_stscanf_s(argv[arg_index], KEY_AND_STRING_FMT, key, 40, str_value, 255);
-			set(key, str_value);
+			success = success && set(key, str_value);
 		}
 		else
 		{
-			_tprintf(TEXT("Unknown configuration: %s\n"), argv[arg_index]);
+			_tprintf(TEXT("Unknown configuration: %s\n"), arg);
 			success = false;
 		}
 	}
 	success = success && check_complete();
 	if(success)
-		_tprintf(TEXT("* Settings successfully configured in:\nCOMPUTER\\HKEY_LOCAL_MACHINE\\%s\n"), MONGREL_CLUSTER_REG_KEY);
+		_tprintf(TEXT("* Settings successfully configured in:\nCOMPUTER\\HKEY_LOCAL_MACHINE\\%s\n"), MONGREL_CLUSTER_REG_KEY_W);
 
 	return success;
 }
@@ -186,9 +204,9 @@ bool Win32ClusterdConfig::is_valid(const TCHAR* key)
 	unsigned int num = 0;
 
 	// check each value exists and is not 0 or empty
-	if(_tcsicmp(key, COMMAND) == 0 || _tcsicmp(key, WORKINGDIR) == 0)
+	if( MATCH(key, COMMAND) || MATCH(key, WORKINGDIR) || MATCH(key, SERVICENAME) )
 		valid &= get(key, &str) && _tcslen(str) != 0;
-	else if(_tcsicmp(key, INSTANCES) == 0 || _tcsicmp(key, BASEPORT) == 0)
+	else if( MATCH(key, INSTANCES) || MATCH(key, BASEPORT))
 		valid &= get(key, &num) && num != 0;
 
 	if(!valid)
@@ -208,6 +226,7 @@ bool Win32ClusterdConfig::check_complete()
 	valid &= is_valid(WORKINGDIR);
 	valid &= is_valid(INSTANCES);
 	valid &= is_valid(BASEPORT);
+	valid &= is_valid(SERVICENAME);
 
 	if(!valid)
 	{
