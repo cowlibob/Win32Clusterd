@@ -3,7 +3,7 @@ A Windows service responsible for launching and maintaining multiple instances o
 
 ## Quickstart
 
-`Win32Clusterd configure instances=3 baseport=3000 workingdir=c:\\rails_app command="c:\\ruby192\\bin\\ruby.exe c:\\rails_app\\script\\server -p %PORT% -e production"`
+`Win32Clusterd configure instances=3 baseport=3000 workingdir=c:\\rails_app command="c:\\ruby192\\bin\\ruby.exe c:\\rails_app\\script\\server -p %PORT% -e production" servicename=rails_app`
 `Win32Clusterd install`
 `Win32Clusterd start`
 
@@ -42,6 +42,7 @@ Where options are:
 - `baseport=n` Configures Win32Clusterd to assign (and resuse) consecutive port numbers starting at `n`
 - `workingdir=path` Configures Win32Clusterd child processes to use path as working directory
 - `command=command_line` Specifies command line for processes to run, eg a path to ruby followed by a script and script options. Note that `%PORT%` will be replaced at runtime with the assigned port number.
+- `servicename=service_name` Sets the name the service will be installed as e.g. rails_app, sinatra_cluster etc.
 
 ### Clean
 `Win32Clusterd.exe clean`
