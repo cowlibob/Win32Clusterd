@@ -27,7 +27,7 @@ protected:
 	void				monitor();
 	void				discard(unsigned int index);
 	void				update_lifetime_stats(__time64_t start);
-
+	void				daily_actions();
 
 
 	bool				build_process_params(ProcessDetail* pd);
@@ -46,5 +46,6 @@ private:
 	TCHAR						*m_service_name;
 	Win32ClusterdConfig			*m_config;
 	DebugLog					m_log;
+	WORD						m_current_day;
 };
 

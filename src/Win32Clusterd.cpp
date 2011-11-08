@@ -5,6 +5,7 @@
 #include <time.h>
 #include <tchar.h>
 #include "Win32ClusterdConfig.h"
+#include "ApacheLogRotator.h"
 
 
 #define SLEEP_TIME 10000
@@ -13,9 +14,17 @@
 #define PORT_PLACEHOLDER TEXT("%PORT%")
 #define PORT_PLACEHOLDER_LEN 6
 
+#ifndef ACCELERATED_LOG_ROTATION
+#	define LOG_ROTATION_PERIOD wDay
+#else
+#	define LOG_ROTATION_PERIOD wMinute
+#endif
+
+
 Win32Clusterd::Win32Clusterd(Win32ClusterdConfig* config)
 {
 	m_average_instance_life = 0;
+	m_current_day = ~0;
 	m_discard_count = 0;
 	m_live_count = 0;
 	m_mongrel_command = NULL;
@@ -43,6 +52,11 @@ Win32Clusterd::Win32Clusterd(Win32ClusterdConfig* config)
 			*it = *(it - 1) + 1;
 		}
 	}
+
+	// grab the current day
+	SYSTEMTIME now;
+	GetLocalTime(&now);
+	m_current_day = now.wDay + 1;
 }
 
 Win32Clusterd::~Win32Clusterd(void)
@@ -69,19 +83,15 @@ bool Win32Clusterd::is_initialized()
  */
 void Win32Clusterd::update()
 {
+#ifndef NO_MONGRELS
 	if(count() < m_desired_instances)
 		launch();
 
-	/* Don't launch all instances at once, this has huge system performance impact.
-	while(count() < m_desired_instances)
-	{
-		launch();
-	}
-	*/
 	if(count() > 0)
-	{
 		monitor();
-	}
+#endif
+	daily_actions();
+
 }
 /*
  *	Monitor child processes, discarding exited children.
@@ -141,6 +151,20 @@ unsigned int Win32Clusterd::count()
 	return count;
 }
 
+void Win32Clusterd::daily_actions()
+{
+	SYSTEMTIME now;
+	GetLocalTime(&now);
+	if(now.LOG_ROTATION_PERIOD != m_current_day)
+	{
+		// perform actions
+		ApacheLogRotator* rotator = new ApacheLogRotator(&m_log, &now);
+		if(rotator->rotateLogs())
+			rotator->discardLogs();
+		delete rotator;
+	}
+	m_current_day = now.LOG_ROTATION_PERIOD;
+}
 
 bool Win32Clusterd::build_process_params(ProcessDetail* pd)
 {

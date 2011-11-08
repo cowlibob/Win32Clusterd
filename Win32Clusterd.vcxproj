@@ -52,6 +52,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -75,6 +76,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -93,16 +95,20 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\ApacheLogRotator.cpp" />
     <ClCompile Include="src\DebugLog.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\ServiceControl.cpp" />
     <ClCompile Include="src\stdafx.cpp" />
     <ClCompile Include="src\Win32Clusterd.cpp" />
     <ClCompile Include="src\Win32ClusterdConfig.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ApacheLogRotator.h" />
     <ClInclude Include="src\DebugLog.h" />
     <ClInclude Include="src\help.h" />
     <ClInclude Include="src\ProcessDetail.h" />
+    <ClInclude Include="src\ServiceControl.h" />
     <ClInclude Include="src\stdafx.h" />
     <ClInclude Include="src\targetver.h" />
     <ClInclude Include="src\Win32Clusterd.h" />

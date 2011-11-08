@@ -9,6 +9,7 @@
 #include "Win32Clusterd.h"
 #include "Win32ClusterdConfig.h"
 #include "help.h"
+#include "ServiceControl.h"
 
 #define SERVICE_NAME_W L"Win32Clusterd"
 #define SERVICE_NAME "Win32Clusterd"
@@ -24,7 +25,7 @@
 
 SERVICE_STATUS			ServiceStatus;
 SERVICE_STATUS_HANDLE	hStatus;
-SC_HANDLE				g_schSCManager;
+//SC_HANDLE				g_schSCManager;
 Win32Clusterd			*cluster = NULL;
 TCHAR					*g_serviceName = NULL;
 Win32ClusterdConfig		*g_config = NULL;
@@ -84,210 +85,6 @@ int run_as_app()
 	return 0;
 }
 
-SC_HANDLE open_service(DWORD desired_access)
-{
-    SC_HANDLE schService;
-
-	g_schSCManager = OpenSCManager( 
-        NULL,                    // local computer
-        NULL,                    // ServicesActive database 
-        SC_MANAGER_ALL_ACCESS);  // full access rights 
- 
-    if (NULL == g_schSCManager) 
-    {
-        printf("OpenSCManager failed (%d)\n", GetLastError());
-        return NULL;
-    }
-
-    // Get a handle to the service.
-
-    schService = OpenService( 
-        g_schSCManager,			// SCM database 
-        g_serviceName,			// name of service 
-        desired_access);
-
-    if (schService == NULL)
-    { 
-        printf("OpenService failed (%d)\n", GetLastError()); 
-        CloseServiceHandle(g_schSCManager);
-    }
-
-	return schService;
-}
-
-void close_service(SC_HANDLE schService)
-{
-	CloseServiceHandle(schService); 
-    CloseServiceHandle(g_schSCManager);
-}
-
-int install_service()
-{
-	SC_HANDLE schSCManager;
-	SC_HANDLE schService;
-	TCHAR szPath[MAX_PATH * 2];
-
-	if( !GetModuleFileName( NULL, szPath, MAX_PATH ) )
-	{
-		printf("Cannot install service (%d)\n", GetLastError());
-		return 1;
-	}
-
-	// Add command line to enforce running as a service
-	_tcscat_s(szPath, SIZEOF_CHARS(szPath), TEXT(" service"));
-
-	// Get a handle to the SCM database. 
-	schSCManager = OpenSCManager( 
-		NULL,                    // local computer
-		NULL,                    // ServicesActive database 
-		SC_MANAGER_ALL_ACCESS);  // full access rights 
- 
-	if (NULL == schSCManager) 
-	{
-		printf("OpenSCManager failed (%d)\n", GetLastError());
-		return 1;
-	}
-
-	// Create the service
-	schService = CreateService( 
-		schSCManager,				// SCM database 
-		g_serviceName,				// name of service 
-		g_serviceName,				// service name to display 
-		SERVICE_ALL_ACCESS,			// desired access 
-		SERVICE_WIN32_OWN_PROCESS,	// service type 
-		SERVICE_AUTO_START,			// start type 
-		SERVICE_ERROR_NORMAL,		// error control type 
-		szPath,						// path to service's binary 
-		NULL,						// no load ordering group 
-		NULL,						// no tag identifier 
-		NULL,						// no dependencies 
-		NULL,						// LocalSystem account 
-		NULL);						// no password 
- 
-	if (schService == NULL)
-	{
-		printf("CreateService failed (%d)\n", GetLastError());
-		CloseServiceHandle(schSCManager);
-		return 1;
-	}
-	else
-		printf("Service installed successfully\n"); 
-
-	// Set the description that is visible in the administration tools server list
-	SERVICE_DESCRIPTION sd;
-	sd.lpDescription = (TCHAR*)TEXT("Manages multiple ruby processes.");
-	BOOL status = ChangeServiceConfig2(schService, SERVICE_CONFIG_DESCRIPTION, &sd);
-	_ASSERT(status != 0);
-
-	// Ensure that the service restarts in the event of any problems
-	SERVICE_FAILURE_ACTIONS	sfa;
-	static SC_ACTION failureActions[] = 
-	{
-		SC_ACTION_NONE
-	};
-	sfa.dwResetPeriod = INFINITE;
-	sfa.lpRebootMsg = NULL;
-	sfa.lpCommand = NULL;
-	sfa.cActions = sizeof(failureActions) / sizeof(failureActions[0]);
-	sfa.lpsaActions = failureActions;
-	status = ChangeServiceConfig2(schService, SERVICE_CONFIG_FAILURE_ACTIONS, &sfa);
-	_ASSERT(status != 0);
-	
-	CloseServiceHandle(schService); 
-	CloseServiceHandle(schSCManager);	
-	return 0;
-}
-
-int uninstall_service()
-{
-	int failed = TRUE;
-    SC_HANDLE schService = open_service(DELETE);
- 
-    if (schService)
-    { 
-		// Delete the service.
- 
-		if (! DeleteService(schService) ) 
-		{
-			printf("DeleteService failed (%d)\n", GetLastError()); 
-		}
-		else
-		{
-			printf("Service unregistered successfully\n"); 
-			failed = FALSE;
-		}
-	    close_service(schService);
-    }
-
-	return failed;
-}
-
-int start_service()
-{
-	int failed = TRUE;
-	SC_HANDLE schService = open_service(SERVICE_START);
-	if(schService)
-	{
-		if(!StartService(schService, 0, NULL))
-		{
-			printf("Service could not be started\n");
-		}
-		else
-		{
-			printf("Service was started.\n");
-			failed = FALSE;
-		}
-		close_service(schService);
-	}
-
-	return failed;
-}
-
-int output_service_state(DWORD current_state)
-{
-	int failed = TRUE;
-	switch(current_state)
-	{
-	case SERVICE_STOP_PENDING:
-		printf("Service is now stopping.\n");
-		failed = FALSE;
-		break;
-	case SERVICE_STOPPED:
-		printf("Service is stopped.\n");
-		failed = FALSE;
-		break;
-	}
-	return failed;
-}
-
-int stop_service()
-{
-	int failed = TRUE;
-	SC_HANDLE schService = open_service(SERVICE_STOP);
-	if(schService)
-	{
-		SERVICE_STATUS status;
-		switch(ControlService(schService, SERVICE_CONTROL_STOP, &status))
-		{
-		case NO_ERROR:
-			failed = output_service_state(status.dwCurrentState);
-			break;
-		case ERROR_SERVICE_NOT_ACTIVE:
-			failed = output_service_state(status.dwCurrentState);
-			break;
-		case ERROR_SERVICE_CANNOT_ACCEPT_CTRL:
-			printf("Service could not be stopped:\n\t");
-			failed = output_service_state(status.dwCurrentState);
-			break;
-		case ERROR_INVALID_SERVICE_CONTROL:
-			printf("Service could not be controlled:\n\t");
-			output_service_state(status.dwCurrentState);
-			failed = TRUE;
-			break;
-		}
-	}
-	return failed;
-}
 
 int help(int argc, _TCHAR* argv[])
 {
@@ -349,17 +146,30 @@ int _tmain(int argc, _TCHAR* argv[])
 	{
 		g_config = new Win32ClusterdConfig;
 		g_config->get(SERVICENAME, &g_serviceName);
+		ServiceControl sc(g_serviceName);
 
 		if(_tcsicmp(argv[1], TEXT("run")) == 0)
 			return run_as_app();
 		else if(_tcsicmp(argv[1], TEXT("install")) == 0)
-			return install_service();
+		{
+			TCHAR szPath[MAX_PATH * 2];
+
+			if( !GetModuleFileName( NULL, szPath, MAX_PATH ) )
+			{
+				printf("Cannot install service (%d)\n", GetLastError());
+				return false;
+			}
+
+			// Add command line to enforce running as a service
+			_tcscat_s(szPath, SIZEOF_CHARS(szPath), TEXT(" service"));
+			return sc.Install(szPath) ? 0 : 1;
+		}
 		else if(_tcsicmp(argv[1], TEXT("uninstall")) == 0)
-			return uninstall_service();
+			return sc.Uninstall() ? 0 : 1;
 		else if(_tcsicmp(argv[1], TEXT("start")) == 0)
-			return start_service();
+			return sc.Start() ? 0 : 1;
 		else if(_tcsicmp(argv[1], TEXT("stop")) == 0)
-			return stop_service();
+			return sc.Stop() ? 0 : 1;
 		else if(_tcsicmp(argv[1], TEXT("service")) == 0)
 			return run_as_service();
 		else if(_tcsicmp(argv[1], TEXT("configure")) == 0)
